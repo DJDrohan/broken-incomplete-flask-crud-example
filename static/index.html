@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Table Manager</title>
+</head>
+<style>
+    body
+    { 
+        text-align: center;
+        font-family: 'Times New Roman', Times, serif;
+
+        color: rgb(59, 59, 59) ;
+        margin-top:10px;
+        margin-left: 10%;
+        margin-right: 10%;
+        margin-bottom: 10px;
+        background: rgb(233, 224, 255);
+    }
+    #Table
+    {
+        border: 20px solid rgb(233, 224, 255);
+        border-radius: 25px;
+        background-color: rgb(233, 224, 255);
+        
+    }
+    menu
+    {
+        list-style-type: none;
+        padding-left: -50px;
+    }
+    #Details
+    {
+        width: 100%;
+        margin: auto;
+        text-align: center;
+        border: 20px solid rgb(233, 224, 255);
+        border-radius: 25px;
+        background-color: rgb(233, 224, 255);
+    }
+    #AsideRight
+    {
+        position: fixed;
+        right:0;
+        margin-top: -50px;
+        width: 30%;
+    }
+    #Aside
+    {
+        float:left;
+        width: 60%;
+        margin-left: 10px;
+    }
+</style>
+<body>
+
+<h1>Student Table Manager</h1>
+
+<!-- Form for adding a new student -->
+<h2>Add Student</h2>
+<form id="addForm">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required>
+    <br>
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required>
+    <br>
+    <button type="button" onclick="addStudent()">Add Student</button>
+</form>
+
+<!-- Form for deleting an existing student -->
+<h2>Delete Student</h2>
+<form id="deleteForm">
+    <label for="deleteId">Student ID to Delete:</label>
+    <input type="number" id="deleteId" name="deleteId" required>
+    <br>
+    <button type="button" onclick="deleteStudent()">Delete Student</button>
+</form>
+
+
+<!-- Form for updating an existing student -->
+<h2>Update Student</h2>
+<form id="updateForm">
+    <label for="updateId">Student ID to Update:</label>
+    <input type="number" id="updateId" name="updateId" required>
+    <br>
+    <label for="updateName">New Name:</label>
+    <input type="text" id="updateName" name="updateName" required>
+    <br>
+    <label for="updateEmail">New Email:</label>
+    <input type="email" id="updateEmail" name="updateEmail" required>
+    <br>
+    <button type="button" onclick="updateStudent()">Update Student</button>
+</form>
+
+<!-- Display data from the server -->
+<h2>Students</h2>
+<div id="#Table">
+    <table border="1" id="studentsTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>ID</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/read')
+            .then(response => response.json())
+            .then(data => {
+                const studentsTableBody = document.querySelector('#studentsTable tbody');
+                data.Results.forEach(student => {
+                    const row = `<tr>
+                                    <td>${student.ID}</td>
+                                    <td>${student.Name}</td>
+                                    <td>${student.Email}</td>
+                                 </tr>`;
+                    studentsTableBody.innerHTML += row;
+                });
+            })
+            .catch(error => console.error('Error:', error));
+    });
+    </script>
+
+<script>
+function addStudent() {
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+
+    fetch('/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.Result);
+        document.getElementById('name').value = '';
+        document.getElementById('email').value = '';
+        fetchStudentsData();
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function updateStudent() {
+    const updateId = document.getElementById('updateId').value;
+    const updateName = document.getElementById('updateName').value;
+    const updateEmail = document.getElementById('updateEmail').value;
+
+    fetch(`/update/${updateId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: updateName, email: updateEmail }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.Result);
+        document.getElementById('updateId').value = '';
+        document.getElementById('updateName').value = '';
+        document.getElementById('updateEmail').value = '';
+        fetchStudentsData();
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function deleteStudent() {
+    const deleteId = document.getElementById('deleteId').value;
+
+    fetch(`/delete/${deleteId}`, {
+        method: 'DELETE',
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.Result);
+        document.getElementById('deleteId').value = '';
+        fetchStudentsData();
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function fetchStudentsData() {
+    fetch('/')
+    .then(response => response.json())
+    .then(data => {
+        const studentsDataDiv = document.getElementById('studentsData');
+        studentsDataDiv.innerHTML = '<h3>Students Data</h3>';
+        
+        if (data.count === 0) {
+            studentsDataDiv.innerHTML += '<p>No students data available.</p>';
+        } else {
+            const table = '<table border="1"><tr><th>ID</th><th>Name</th><th>Email</th></tr>' +
+                data.Results.map(student => `<tr><td>${student.ID}</td><td>${student.Name}</td><td>${student.Email}</td></tr>`).join('') +
+                '</table>';
+            studentsDataDiv.innerHTML += table;
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Initial fetch to display data on page load
+fetchStudentsData();
+</script>
+
+</body>
+</html>
